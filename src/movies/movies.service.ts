@@ -5,31 +5,39 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MoviesService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createMovieDto: CreateMovieDto) {
-    const { directors, studios, categories, tags, ...movieData } = createMovieDto;
-  
+    const { directors, studios, categories, tags, ...movieData } =
+      createMovieDto;
+
     const tagIds = await this.upsertAndReturnIds(this.prisma.tag, tags);
-    const directorIds = await this.upsertAndReturnIds(this.prisma.director, directors);
-    const studioIds = await this.upsertAndReturnIds(this.prisma.studio, studios);
-    const categoryIds = await this.upsertAndReturnIds(this.prisma.category, categories);
+    const directorIds = await this.upsertAndReturnIds(
+      this.prisma.director,
+      directors,
+    );
+    const studioIds = await this.upsertAndReturnIds(
+      this.prisma.studio,
+      studios,
+    );
+    const categoryIds = await this.upsertAndReturnIds(
+      this.prisma.category,
+      categories,
+    );
     const createdMovie = await this.prisma.movie.create({
       data: {
         ...movieData,
         directors: { connect: directorIds },
         studios: { connect: studioIds },
-        categories: { connect:  categoryIds},
+        categories: { connect: categoryIds },
         tags: { connect: tagIds },
       },
     });
-  
+
     return { data: { _id: createdMovie.id }, statusCode: HttpStatus.CREATED };
   }
-  
-   async upsertAndReturnIds(model: any, names: string[]) {
+
+  async upsertAndReturnIds(model: any, names: string[]) {
     return Promise.all(
       names.map(async (name) => {
         const entity = await model.upsert({
@@ -38,10 +46,9 @@ export class MoviesService {
           create: { name },
         });
         return { id: entity.id };
-      })
+      }),
     );
   }
-  
 
   findAll() {
     return `This action returns all movies`;

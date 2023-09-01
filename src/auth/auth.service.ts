@@ -1,4 +1,11 @@
-import { BadRequestException, HttpCode, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpCode,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -11,15 +18,15 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async login(loginDto: LoginDto) {
     try {
       const { email, password } = loginDto;
 
       const user = await this.prisma.user.findUnique({
-        where: { email: email }
-      })
+        where: { email: email },
+      });
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -33,10 +40,10 @@ export class AuthService {
       const tokens = await this.generateTokens(user);
 
       await this.prisma.refreshToken.create({
-        data: { token: tokens.refreshToken, userId: user.id }
-      })
+        data: { token: tokens.refreshToken, userId: user.id },
+      });
 
-      return { data: { tokens, user: sanitezeUser(user) } }
+      return { data: { tokens, user: sanitezeUser(user) } };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -47,7 +54,7 @@ export class AuthService {
       const { email, password, username } = signupDto;
 
       const existingUser = await this.prisma.user.findUnique({
-        where: { email: email }
+        where: { email: email },
       });
 
       if (existingUser) {
@@ -56,15 +63,14 @@ export class AuthService {
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await this.prisma.user.create({
-        data: { email, password: hashedPassword, username }
-      })
+        data: { email, password: hashedPassword, username },
+      });
 
       const tokens = await this.generateTokens(user);
 
-      return { data: { tokens, user: sanitezeUser(user) } }
+      return { data: { tokens, user: sanitezeUser(user) } };
     } catch (error) {
       throw new BadRequestException(error.message);
-
     }
   }
 
@@ -79,7 +85,7 @@ export class AuthService {
     }
 
     const refreshTokenDoc = await this.prisma.refreshToken.findUnique({
-      where: { token: rt }
+      where: { token: rt },
     });
 
     if (!refreshTokenDoc) {
@@ -87,7 +93,7 @@ export class AuthService {
     }
 
     const user = await this.prisma.user.findUnique({
-      where: { id: refreshTokenDoc.userId }
+      where: { id: refreshTokenDoc.userId },
     });
 
     if (!user) {
@@ -96,7 +102,7 @@ export class AuthService {
 
     const { accessToken } = await this.generateTokens(user);
 
-    return { data: { tokens: { accessToken }, user: sanitezeUser(user) } }
+    return { data: { tokens: { accessToken }, user: sanitezeUser(user) } };
   }
 
   remove(id: number) {
@@ -109,7 +115,9 @@ export class AuthService {
   }
 
   async generatePermissionsForRole(role: string) {
-    const roleDoc = await this.prisma.role.findUnique({ where: { name: role } });
+    const roleDoc = await this.prisma.role.findUnique({
+      where: { name: role },
+    });
     // console.log(roleDoc);
     if (!roleDoc) {
       return [];
@@ -123,8 +131,15 @@ export class AuthService {
     console.log(user);
 
     const permissions = await this.generatePermissionsForRole(role);
-    const accessToken = this.jwtService.sign({ _id: user.id, permissions, role: user.role });
-    const refreshToken = this.jwtService.sign({ _id: user.id }, { expiresIn: '30d' });
+    const accessToken = this.jwtService.sign({
+      _id: user.id,
+      permissions,
+      role: user.role,
+    });
+    const refreshToken = this.jwtService.sign(
+      { _id: user.id },
+      { expiresIn: '30d' },
+    );
 
     return { accessToken, refreshToken };
   }
