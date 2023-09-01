@@ -16,16 +16,12 @@ export class MoviesService {
     const directorIds = await this.upsertAndReturnIds(this.prisma.director, directors);
     const studioIds = await this.upsertAndReturnIds(this.prisma.studio, studios);
     const categoryIds = await this.upsertAndReturnIds(this.prisma.category, categories);
-
-    console.log(categoryIds, 'categoryIds')
-    // console.log(categories, 'studioIds')
-  
     const createdMovie = await this.prisma.movie.create({
       data: {
         ...movieData,
         directors: { connect: directorIds },
         studios: { connect: studioIds },
-        categories: { connect: categoryIds },
+        categories: { connect:  categoryIds},
         tags: { connect: tagIds },
       },
     });

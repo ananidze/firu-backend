@@ -41,9 +41,9 @@ model Movie {
   titleEn       String
   year          Int
   directorIDs   String[]   @db.ObjectId
-  directors     Director[] @relation(fields: [categoryIDs], references: [id])
+  directors     Director[] @relation(fields: [directorIDs], references: [id])
   studioIDs     String[]   @db.ObjectId
-  studios       Studio[]   @relation(fields: [categoryIDs], references: [id])
+  studios       Studio[]   @relation(fields: [studioIDs], references: [id])
   poster        String
   banner        String
   logo          String
@@ -56,10 +56,10 @@ model Movie {
   commentsCount Int        @default(0)
   viewsCount    Int        @default(0)
   likesCount    Int        @default(0)
-  categories    Category[] @relation(fields: [categoryIDs], references: [id])
   categoryIDs   String[]   @db.ObjectId
-  tags          Tag[]      @relation(fields: [tagIDs], references: [id])
+  categories    Category[] @relation(fields: [categoryIDs], references: [id])
   tagIDs        String[]   @db.ObjectId
+  tags          Tag[]      @relation(fields: [tagIDs], references: [id])
   languages     String[]
   episodesCount Int?       @default(0)
   seasonsCount  Int?       @default(0)
