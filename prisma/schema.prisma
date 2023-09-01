@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  GUEST
+  ADMIN
+}
+
+model User {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  email           String   @unique
+  username        String   @unique
+  role            UserRole @default(GUEST)
+  isEmailVerified Boolean  @default(false)
+  password        String
+  avatar          String?
+}
+
+model Role {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  permissions String[] @default([])
+}
+
+model RefreshToken {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  token  String @unique
+  userId String
+}
+
+model Movie {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  titleEn       String
+  year          Int
+  directorIDs   String[]   @db.ObjectId
+  directors     Director[] @relation(fields: [categoryIDs], references: [id])
+  studioIDs     String[]   @db.ObjectId
+  studios       Studio[]   @relation(fields: [categoryIDs], references: [id])
+  poster        String
+  banner        String
+  logo          String
+  country       String
+  description   String
+  imdb          String
+  age           String
+  type          String
+  visible       Boolean    @default(false)
+  commentsCount Int        @default(0)
+  viewsCount    Int        @default(0)
+  likesCount    Int        @default(0)
+  categories    Category[] @relation(fields: [categoryIDs], references: [id])
+  categoryIDs   String[]   @db.ObjectId
+  tags          Tag[]      @relation(fields: [tagIDs], references: [id])
+  tagIDs        String[]   @db.ObjectId
+  languages     String[]
+  episodesCount Int?       @default(0)
+  seasonsCount  Int?       @default(0)
+  seasons       Season[]
+  Language      Language?  @relation(fields: [languageId], references: [id])
+  languageId    String?    @db.ObjectId
+}
+
+model Director {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name     String   @unique
+  movieIDs String[] @db.ObjectId
+  movies   Movie[]  @relation(fields: [movieIDs], references: [id])
+}
+
+model Category {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name     String   @unique
+  movieIDs String[] @db.ObjectId
+  movies   Movie[]  @relation(fields: [movieIDs], references: [id])
+}
+
+model Studio {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name     String   @unique
+  movieIDs String[] @db.ObjectId
+  movies   Movie[]  @relation(fields: [movieIDs], references: [id])
+}
+
+model Tag {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name     String   @unique
+  movies   Movie[]  @relation(fields: [movieIDs], references: [id])
+  movieIDs String[] @db.ObjectId
+}
+
+model Language {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  language        String
+  movies          Movie[]
+  episodes        Episode[]
+  EpisodeLanguage EpisodeLanguage[]
+}
+
+model Season {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  title    String
+  episodes Episode[]
+  movie    Movie     @relation(fields: [movieIDs], references: [id])
+  movieIDs String    @db.ObjectId
+}
+
+model Episode {
+  id         String            @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  length     Int
+  season     Season            @relation(fields: [seasonId], references: [id])
+  languages  EpisodeLanguage[]
+  Language   Language?         @relation(fields: [languageId], references: [id])
+  languageId String?           @db.ObjectId
+  seasonId   String            @db.ObjectId
+}
+
+model EpisodeLanguage {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  language    Language     @relation(fields: [languageId], references: [id])
+  episode     Episode      @relation(fields: [episodeId], references: [id])
+  resolutions Resolution[]
+  languageId  String       @db.ObjectId
+  episodeId   String       @db.ObjectId
+}
+
+model Resolution {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  palyer            Boolean
+  resolution        String
+  url               String
+  episodeLanguage   EpisodeLanguage @relation(fields: [episodeLanguageId], references: [id])
+  episodeLanguageId String          @db.ObjectId
+}
