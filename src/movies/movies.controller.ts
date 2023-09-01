@@ -27,6 +27,14 @@ export class MoviesController {
     return this.moviesService.findAll();
   }
 
+  @Get('find/pagination?:cursor&:limit')
+  findWithPagination(
+    @Param('cursor') cursor: string,
+    @Param('limit') limit: number,
+  ) {
+    return this.moviesService.findWithPagination(cursor, limit);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.moviesService.findOne(+id);

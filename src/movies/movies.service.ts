@@ -54,6 +54,31 @@ export class MoviesService {
     return `This action returns all movies`;
   }
 
+  async findWithPagination(cursor: string, limit: number) {
+    try {
+      const skip = cursor ? 1 : 0;
+      const movies = await this.prisma.movie.findMany({
+        skip,
+        take: limit,
+        cursor: cursor ? { id: cursor } : undefined,
+      });
+
+      const totalMovies = await this.prisma.movie.count();
+
+      return {
+        success: true,
+        message: 'Movies fetched successfully',
+        data: movies,
+        total: totalMovies,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Something went wrong: ${error.message}`,
+      };
+    }
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} movie`;
   }
