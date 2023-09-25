@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  GUEST
+  ADMIN
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  username        String   @unique
+  role            UserRole @default(GUEST)
+  isEmailVerified Boolean  @default(false)
+  password        String
+  avatar          String?
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  permissions String[] @default([])
+}
+
+model RefreshToken {
+  id     String @id @default(cuid())
+  token  String @unique
+  userId String
+}
+
+model Movie {
+  id                String     @id @default(cuid())
+  title             String
+  titleEn           String
+  year              Int
+  directors         Director[]
+  studios           Studio[]
+  poster            String
+  banner            String
+  logo              String
+  country           String
+  description       String
+  imdb              String
+  age               String
+  duration          Int        @default(0)
+  type              String
+  franchise         String     @default("")
+  trailer           String     @default("")
+  latestEpisodeDate DateTime?
+  visible           Boolean    @default(false)
+  commentsCount     Int        @default(0)
+  viewsCount        Int        @default(0)
+  likesCount        Int        @default(0)
+  categories        Category[]
+  tags              Tag[]
+  languages         String[]
+  episodesCount     Int?       @default(0)
+  seasonsCount      Int?       @default(0)
+  seasons           Season[]
+}
+
+model Director {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  movies Movie[]
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  movies Movie[]
+}
+
+model Studio {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  movies Movie[]
+}
+
+model Tag {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  movies Movie[]
+}
+
+model Season {
+  id       String    @id @default(cuid())
+  title    String
+  episodes Episode[]
+  movie    Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId  String
+}
+
+model Episode {
+  id           String     @id @default(cuid())
+  title        String
+  duration     Int
+  openingStart Int
+  openingEnd   Int
+  end          Int
+  poster       String
+  languages    Language[]
+  season       Season     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  seasonId     String
+  createdAt    DateTime   @default(now())
+}
+
+model Language {
+  id          String       @id @default(cuid())
+  language    String
+  resolutions Resolution[]
+  episodeId   String
+  episode     Episode      @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+}
+
+model Resolution {
+  id         String   @id @default(cuid())
+  player     Boolean
+  resolution String
+  url        String
+  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  languageId String
+}
