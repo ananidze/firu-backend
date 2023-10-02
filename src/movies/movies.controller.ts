@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Ip,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
@@ -38,10 +39,16 @@ export class MoviesController {
     return this.moviesService.findAll(page, limit, title, type);
   }
 
+  @Get('/top')
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  getTopMovies(@Query('limit') take: number, @Query('page') page: number) {
+    return this.moviesService.topWatchedMovies({ page, take });
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    console.log(1);
-    return this.moviesService.findOne(id);
+  findOne(@Param('id') id: string, @Ip() ip: string) {
+    return this.moviesService.findOne(id, ip);
   }
 
   @Patch(':id')
@@ -84,6 +91,15 @@ export class MoviesController {
       seasonId,
       episodeData,
     );
+  }
+
+  @Get(':id/seasons/:seasonId/episodes/:episodeId')
+  findOneEpisode(
+    @Param('id') movieId: string,
+    @Param('seasonId') seasonId: string,
+    @Param('episodeId') episodeId: string,
+  ) {
+    return this.moviesService.findOneEpisode({ movieId, episodeId });
   }
 
   @Patch(':id/seasons/:seasonId/episodes/:episodeId')

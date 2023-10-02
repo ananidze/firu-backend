@@ -64,6 +64,18 @@ model Movie {
   episodesCount     Int?       @default(0)
   seasonsCount      Int?       @default(0)
   seasons           Season[]
+  createdAt         DateTime   @default(now())
+  views             View[]
+}
+
+model View {
+  id        String   @id @default(cuid())
+  viewerIP  String
+  createdAt DateTime @default(now())
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId   String?
+  episode   Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  episodeId String?
 }
 
 model Director {
@@ -110,6 +122,7 @@ model Episode {
   season       Season     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   seasonId     String
   createdAt    DateTime   @default(now())
+  View         View[]
 }
 
 model Language {
