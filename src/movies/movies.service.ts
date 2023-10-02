@@ -114,15 +114,26 @@ export class MoviesService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, ip: string) {
     try {
       const movie = await this.prisma.movie.findUnique({
         where: { id },
         include: GET_MOVIE_QUERY,
       });
 
-      movie.viewsCount = movie.viewsCount + 1;
+      await this.prisma.movie.update({
+        where: { id: movie.id },
+        data: { viewsCount: movie.viewsCount + 1 },
+      });
+
       const lastSeason = movie.seasons[movie.seasons.length - 1] || 0;
+
+      await this.prisma.view.create({
+        data: {
+          viewerIP: ip,
+          movie: { connect: { id: movie.id } },
+        },
+      });
 
       return {
         success: true,
@@ -392,6 +403,72 @@ export class MoviesService {
     return {
       success: true,
       message: 'Resolution deleted successfully',
+    };
+  }
+
+  async findOneEpisode({ episodeId, movieId }) {
+    const episode = await this.prisma.episode.findUnique({
+      where: { id: episodeId },
+      include: {
+        languages: {
+          include: {
+            resolutions: true,
+          },
+        },
+      },
+    });
+
+    const movie = await this.prisma.movie.findUnique({
+      where: { id: movieId },
+    });
+
+    return {
+      success: true,
+      message: 'Episode fetched successfully',
+      data: {
+        ...episode,
+        movie,
+      },
+    };
+  }
+
+  async topWatchedMovies({ page, take }) {
+    page = Number(page) || 1;
+    take = Number(take) || 10;
+
+    const skip = (page - 1) * take;
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const topWatchedMovies = await this.prisma.view.groupBy({
+      by: 'movieId',
+      _count: {
+        movieId: true,
+      },
+      where: {
+        createdAt: {
+          gte: oneWeekAgo,
+        },
+      },
+      orderBy: {
+        _count: {
+          movieId: 'desc',
+        },
+      },
+    });
+    const movieIds = topWatchedMovies.map((entry) => entry.movieId);
+    const topMovies = await this.prisma.movie.findMany({
+      where: {
+        id: {
+          in: movieIds,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Movies fetched successfully',
+      data: { movies: topMovies, total: topMovies.length },
     };
   }
 }
