@@ -29,14 +29,15 @@ export class MoviesController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'title', required: false, type: String })
   @ApiQuery({ name: 'type', required: false, type: String })
+  @ApiQuery({ name: 'sort', required: false, type: String })
   findAll(
     @Query('limit') limit: number,
     @Query('page') page: number,
     @Query('title') title: string,
     @Query('type') type: string,
+    @Query('sort') sort: string,
   ) {
-    console.log(title);
-    return this.moviesService.findAll(page, limit, title, type);
+    return this.moviesService.findAll(page, limit, title, type, sort);
   }
 
   @Get('/top')
@@ -98,8 +99,9 @@ export class MoviesController {
     @Param('id') movieId: string,
     @Param('seasonId') seasonId: string,
     @Param('episodeId') episodeId: string,
+    @Ip() ip: string,
   ) {
-    return this.moviesService.findOneEpisode({ movieId, episodeId });
+    return this.moviesService.findOneEpisode({ movieId, episodeId, ip });
   }
 
   @Patch(':id/seasons/:seasonId/episodes/:episodeId')

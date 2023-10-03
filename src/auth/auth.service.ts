@@ -75,34 +75,42 @@ export class AuthService {
   }
 
   async refreshToken(rt: string) {
-    if (!rt) {
+    try {
+      if (!rt) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const decoded = this.jwtService.decode(rt) as any;
+      if (!decoded) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const refreshTokenDoc = await this.prisma.refreshToken.findUnique({
+        where: { token: rt },
+      });
+
+      if (!refreshTokenDoc) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: refreshTokenDoc.userId },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const { accessToken } = await this.generateTokens(user);
+
+      return { data: { tokens: { accessToken }, user: sanitezeUser(user) } };
+    } catch (error) {
+      await this.prisma.refreshToken.delete({
+        where: { token: rt },
+      });
+
       throw new UnauthorizedException('Invalid refresh token');
     }
-
-    const decoded = this.jwtService.decode(rt) as any;
-    if (!decoded) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const refreshTokenDoc = await this.prisma.refreshToken.findUnique({
-      where: { token: rt },
-    });
-
-    if (!refreshTokenDoc) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const user = await this.prisma.user.findUnique({
-      where: { id: refreshTokenDoc.userId },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const { accessToken } = await this.generateTokens(user);
-
-    return { data: { tokens: { accessToken }, user: sanitezeUser(user) } };
   }
 
   remove(id: number) {
