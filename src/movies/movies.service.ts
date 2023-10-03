@@ -66,7 +66,13 @@ export class MoviesService {
     };
   }
 
-  async findAll(page: number, take: number, title: string, type: string) {
+  async findAll(
+    page: number,
+    take: number,
+    title: string,
+    type: string,
+    sort: string,
+  ) {
     page = Number(page) || 1;
     take = Number(take) || 10;
 
@@ -85,11 +91,14 @@ export class MoviesService {
       where['type'] = { contains: type, mode: 'insensitive' };
     }
 
+    const orderBy: any =
+      sort === 'latest' ? { createdAt: 'desc' } : { latestEpisodeDate: 'desc' };
+
     const movies = await this.prisma.movie.findMany({
       skip,
       take,
       where,
-      orderBy: { latestEpisodeDate: 'desc' },
+      orderBy: orderBy,
       select: GET_MOVIES_QUERY,
     });
 
@@ -126,7 +135,8 @@ export class MoviesService {
         data: { viewsCount: movie.viewsCount + 1 },
       });
 
-      const lastSeason = movie.seasons[movie.seasons.length - 1] || 0;
+      const lastSeason =
+        movie.seasons[movie.seasons.length - 1].episodes.length || 0;
 
       await this.prisma.view.create({
         data: {
@@ -406,7 +416,7 @@ export class MoviesService {
     };
   }
 
-  async findOneEpisode({ episodeId, movieId }) {
+  async findOneEpisode({ episodeId, movieId, ip }) {
     const episode = await this.prisma.episode.findUnique({
       where: { id: episodeId },
       include: {
@@ -415,6 +425,13 @@ export class MoviesService {
             resolutions: true,
           },
         },
+      },
+    });
+
+    await this.prisma.view.create({
+      data: {
+        viewerIP: ip,
+        movie: { connect: { id: movieId } },
       },
     });
 
@@ -445,6 +462,8 @@ export class MoviesService {
       _count: {
         movieId: true,
       },
+      take,
+      skip,
       where: {
         createdAt: {
           gte: oneWeekAgo,
@@ -457,12 +476,31 @@ export class MoviesService {
       },
     });
     const movieIds = topWatchedMovies.map((entry) => entry.movieId);
-    const topMovies = await this.prisma.movie.findMany({
+    const topMovies: any = await this.prisma.movie.findMany({
       where: {
         id: {
           in: movieIds,
         },
       },
+      orderBy: {
+        viewsCount: 'desc',
+      },
+      include: {
+        categories: true,
+        seasons: {
+          select: {
+            episodes: true,
+          },
+        },
+      },
+    });
+
+    topMovies.map((movie) => {
+      movie.categories = movie.categories.map((category) => category.name);
+      movie.lastSeasonEpCount =
+        movie.seasons[movie.seasons.length - 1]?.episodes?.length || 0;
+      delete movie.seasons;
+      // movie.seasons[movie.seasons.length - 1].episodes.length || 0;
     });
 
     return {
