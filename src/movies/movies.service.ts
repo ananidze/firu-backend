@@ -136,7 +136,7 @@ export class MoviesService {
       });
 
       const lastSeason =
-        movie.seasons[movie.seasons.length - 1].episodes.length || 0;
+        movie.seasons[movie.seasons.length - 1]?.episodes?.length || 0;
 
       await this.prisma.view.create({
         data: {
