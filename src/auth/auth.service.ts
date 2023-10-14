@@ -118,8 +118,7 @@ export class AuthService {
   }
 
   validateUser(userId: string) {
-    // throw new Error('Method not implemented.');
-    return null;
+    return this.prisma.user.findUnique({ where: { id: userId } });
   }
 
   async generatePermissionsForRole(role: string) {

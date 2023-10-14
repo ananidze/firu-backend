@@ -1,5 +1,5 @@
 export interface JwtDto {
-  userId: string;
+  _id: string;
   /**
    * Issued at
    */
@@ -8,4 +8,12 @@ export interface JwtDto {
    * Expiration time
    */
   exp: number;
+  /**
+   * Role
+   */
+  role: string;
+  /**
+   * Permissions
+   */
+  permissions: string[];
 }

@@ -8,39 +8,44 @@ import {
   Delete,
   Query,
   Ip,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('movies')
-@Controller('movies')
+@Controller()
 export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
 
-  @Post()
+  @Post('movies')
   create(@Body() createMovieDto: CreateMovieDto) {
     return this.moviesService.create(createMovieDto);
   }
 
-  @Get()
+  @Get('movies')
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'title', required: false, type: String })
   @ApiQuery({ name: 'type', required: false, type: String })
   @ApiQuery({ name: 'sort', required: false, type: String })
+  @UseGuards(JwtAuthGuard)
   findAll(
     @Query('limit') limit: number,
     @Query('page') page: number,
     @Query('title') title: string,
     @Query('type') type: string,
     @Query('sort') sort: string,
+    @Req() req,
   ) {
-    return this.moviesService.findAll(page, limit, title, type, sort);
+    return this.moviesService.findAll(page, limit, title, type, sort, req.user);
   }
 
-  @Get('/top')
+  @Get('movies/top')
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
   getTopMovies(@Query('limit') limit: number, @Query('page') page: number) {
@@ -48,122 +53,89 @@ export class MoviesController {
     return this.moviesService.topWatchedMovies({ page, limit });
   }
 
-  @Get(':id')
+  @Get('movies/:id')
   findOne(@Param('id') id: string, @Ip() ip: string) {
     return this.moviesService.findOne(id, ip);
   }
 
-  @Patch(':id')
+  @Patch('movies/:id')
   update(@Param('id') id: string, @Body() updateMovieDto: UpdateMovieDto) {
     return this.moviesService.update(id, updateMovieDto);
   }
 
-  @Delete(':id')
+  @Delete('movies/:id')
   remove(@Param('id') id: string) {
     return this.moviesService.remove(id);
   }
 
-  @Post(':id/seasons')
+  @Post('movies/:id/seasons')
   addSeasonToMovie(@Param('id') id: string, @Body('title') title: string) {
     return this.moviesService.addSeasonToMovie(id, title);
   }
 
-  @Patch(':id/seasons/:seasonId')
-  updateSeason(
-    @Param('id') id: string,
-    @Param('seasonId') seasonId: string,
-    @Body() seasonData: any,
-  ) {
+  @Patch('seasons/:seasonId')
+  updateSeason(@Param('seasonId') seasonId: string, @Body() seasonData: any) {
     return this.moviesService.updateSeason(seasonId, seasonData);
   }
 
-  @Delete(':id/seasons/:seasonId')
-  removeSeason(@Param('id') id: string, @Param('seasonId') seasonId: string) {
+  @Delete('seasons/:seasonId')
+  removeSeason(@Param('seasonId') seasonId: string) {
     return this.moviesService.removeSeason(seasonId);
   }
 
-  @Post(':id/seasons/:seasonId/episodes')
+  @Post('seasons/:seasonId/episodes')
   addEpisodeToSeason(
-    @Param('id') movieId: string,
     @Param('seasonId') seasonId: string,
     @Body() episodeData: any,
   ) {
-    return this.moviesService.addEpisodeToSeason(
-      movieId,
-      seasonId,
-      episodeData,
-    );
+    return this.moviesService.addEpisodeToSeason(seasonId, episodeData);
   }
 
-  @Get(':id/seasons/:seasonId/episodes/:episodeId')
+  @Get('movies/:movieId/episodes/:episodeId')
   findOneEpisode(
-    @Param('id') movieId: string,
-    @Param('seasonId') seasonId: string,
+    @Param('movieId') movieId: string,
     @Param('episodeId') episodeId: string,
     @Ip() ip: string,
   ) {
-    return this.moviesService.findOneEpisode({ movieId, episodeId, ip });
+    return this.moviesService.findOneEpisode({ episodeId, movieId, ip });
   }
 
-  @Patch(':id/seasons/:seasonId/episodes/:episodeId')
+  @Patch('episodes/:episodeId')
   updateEpisode(
-    @Param('id') movieId: string,
-    @Param('seasonId') seasonId: string,
     @Param('episodeId') episodeId: string,
     @Body() episodeData: any,
   ) {
     return this.moviesService.updateEpisode(episodeId, episodeData);
   }
 
-  @Delete(':id/seasons/:seasonId/episodes/:episodeId')
-  removeEpisode(
-    @Param('id') movieId: string,
-    @Param('seasonId') seasonId: string,
-    @Param('episodeId') episodeId: string,
-  ) {
+  @Delete('episodes/:episodeId')
+  removeEpisode(@Param('episodeId') episodeId: string) {
     return this.moviesService.removeEpisode(episodeId);
   }
 
-  @Post(':id/seasons/:seasonId/episodes/:episodeId/languages')
+  @Post('episodes/:episodeId/languages')
   async addLanguageToEpisode(
-    @Param('id') movieId: string,
-    @Param('seasonId') seasonId: string,
     @Param('episodeId') episodeId: string,
     @Body() languageData: { language: string },
   ) {
-    return this.moviesService.addLanguageToEpisode(
-      seasonId,
-      episodeId,
-      languageData,
-    );
+    return this.moviesService.addLanguageToEpisode(episodeId, languageData);
   }
 
-  @Patch(':id/seasons/:seasonId/episodes/:episodeId/languages/:languageId')
+  @Patch('languages/:languageId')
   async updateLanguage(
-    @Param('id') movieId: string,
-    @Param('seasonId') seasonId: string,
-    @Param('episodeId') episodeId: string,
     @Param('languageId') languageId: string,
     @Body() languageData: { language: string },
   ) {
     return this.moviesService.updateLanguage(languageId, languageData);
   }
 
-  @Delete(':id/seasons/:seasonId/episodes/:episodeId/languages/:languageId')
-  async removeLanguage(
-    @Param('id') movieId: string,
-    @Param('seasonId') seasonId: string,
-    @Param('episodeId') episodeId: string,
-    @Param('languageId') languageId: string,
-  ) {
+  @Delete('languages/:languageId')
+  async removeLanguage(@Param('languageId') languageId: string) {
     return this.moviesService.removeLanguage(languageId);
   }
 
-  @Post(
-    ':id/seasons/:seasonId/episodes/:episodeId/languages/:languageId/resolutions',
-  )
+  @Post('languages/:languageId/resolutions')
   async addResolutionToLanguage(
-    @Param('id') movieId: string,
     @Param('languageId') languageId: string,
     @Body() resolutionData: { resolution: string },
   ) {
@@ -173,26 +145,16 @@ export class MoviesController {
     );
   }
 
-  @Patch(
-    ':id/seasons/:seasonId/episodes/:episodeId/languages/:languageId/resolutions/:resolutionId',
-  )
+  @Patch('esolutions/:resolutionId')
   async updateResolution(
-    @Param('id') movieId: string,
-    @Param('languageId') languageId: string,
     @Param('resolutionId') resolutionId: string,
     @Body() resolutionData: { resolution: string },
   ) {
     return this.moviesService.updateResolution(resolutionId, resolutionData);
   }
 
-  @Delete(
-    ':id/seasons/:seasonId/episodes/:episodeId/languages/:languageId/resolutions/:resolutionId',
-  )
-  async removeResolution(
-    @Param('id') movieId: string,
-    @Param('languageId') languageId: string,
-    @Param('resolutionId') resolutionId: string,
-  ) {
+  @Delete('resolutions/:resolutionId')
+  async removeResolution(@Param('resolutionId') resolutionId: string) {
     return this.moviesService.removeResolution(resolutionId);
   }
 }

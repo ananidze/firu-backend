@@ -10,13 +10,11 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
 
-
   const config = new DocumentBuilder()
     .setTitle('Firu')
     .setDescription('The Firu API description')
     .setVersion('0.1')
     .build();
-
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

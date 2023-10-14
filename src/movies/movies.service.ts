@@ -72,6 +72,7 @@ export class MoviesService {
     title: string,
     type: string,
     sort: string,
+    user: any,
   ) {
     page = Number(page) || 1;
     take = Number(take) || 10;
@@ -89,6 +90,10 @@ export class MoviesService {
 
     if (type) {
       where['type'] = { contains: type, mode: 'insensitive' };
+    }
+
+    if (user?.role !== 'ADMIN') {
+      where['visible'] = true;
     }
 
     const orderBy: any =
@@ -251,11 +256,7 @@ export class MoviesService {
     };
   }
 
-  async addEpisodeToSeason(
-    movieId: string,
-    seasonId: string,
-    episodeData: any,
-  ) {
+  async addEpisodeToSeason(seasonId: string, episodeData: any) {
     const season = await this.prisma.season.findUnique({
       where: { id: seasonId },
       include: { episodes: true },
@@ -276,7 +277,7 @@ export class MoviesService {
     });
 
     await this.prisma.movie.update({
-      where: { id: movieId },
+      where: { id: season.movieId },
       data: {
         episodesCount: { increment: 1 },
         latestEpisodeDate: createdEpisode.createdAt,
@@ -287,11 +288,7 @@ export class MoviesService {
     return updatedSeason;
   }
 
-  async addLanguageToEpisode(
-    seasonId: string,
-    episodeId: string,
-    languageData: any,
-  ) {
+  async addLanguageToEpisode(episodeId: string, languageData: any) {
     const episode = await this.prisma.episode.findUnique({
       where: { id: episodeId },
       include: { languages: true },
