@@ -43,8 +43,9 @@ export class MoviesController {
   @Get('/top')
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
-  getTopMovies(@Query('limit') take: number, @Query('page') page: number) {
-    return this.moviesService.topWatchedMovies({ page, take });
+  getTopMovies(@Query('limit') limit: number, @Query('page') page: number) {
+    console.log(page, limit);
+    return this.moviesService.topWatchedMovies({ page, limit });
   }
 
   @Get(':id')
