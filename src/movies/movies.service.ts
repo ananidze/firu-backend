@@ -449,11 +449,11 @@ export class MoviesService {
     };
   }
 
-  async topWatchedMovies({ page, take }) {
-    page = Number(page) || 1;
-    take = Number(take) || 10;
+  async topWatchedMovies({ page, limit }) {
+    page = Number(page) || 0;
+    limit = Number(limit) || 10;
 
-    const skip = (page - 1) * take;
+    const skip = page * limit;
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -462,8 +462,6 @@ export class MoviesService {
       _count: {
         movieId: true,
       },
-      take,
-      skip,
       where: {
         createdAt: {
           gte: oneWeekAgo,
@@ -475,6 +473,7 @@ export class MoviesService {
         },
       },
     });
+
     const movieIds = topWatchedMovies.map((entry) => entry.movieId);
     const topMovies: any = await this.prisma.movie.findMany({
       where: {
@@ -482,6 +481,8 @@ export class MoviesService {
           in: movieIds,
         },
       },
+      skip,
+      take: limit,
       orderBy: {
         viewsCount: 'desc',
       },
