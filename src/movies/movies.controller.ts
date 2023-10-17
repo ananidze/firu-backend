@@ -49,7 +49,6 @@ export class MoviesController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
   getTopMovies(@Query('limit') limit: number, @Query('page') page: number) {
-    console.log(page, limit);
     return this.moviesService.topWatchedMovies({ page, limit });
   }
 
@@ -145,7 +144,7 @@ export class MoviesController {
     );
   }
 
-  @Patch('esolutions/:resolutionId')
+  @Patch('resolutions/:resolutionId')
   async updateResolution(
     @Param('resolutionId') resolutionId: string,
     @Body() resolutionData: { resolution: string },

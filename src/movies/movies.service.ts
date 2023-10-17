@@ -134,22 +134,16 @@ export class MoviesService {
         where: { id },
         include: GET_MOVIE_QUERY,
       });
-
-      await this.prisma.movie.update({
-        where: { id: movie.id },
-        data: { viewsCount: movie.viewsCount + 1 },
-      });
-
       const lastSeason =
         movie.seasons[movie.seasons.length - 1]?.episodes?.length || 0;
 
-      await this.prisma.view.create({
-        data: {
-          viewerIP: ip,
-          movie: { connect: { id: movie.id } },
-        },
-      });
+      let aggregatedViews = 0;
 
+      for (const season of movie.seasons || []) {
+        for (const episode of (season.episodes || []) as any[]) {
+          aggregatedViews += episode.viewsCount;
+        }
+      }
       return {
         success: true,
         message: 'Movie fetched successfully',
@@ -160,6 +154,7 @@ export class MoviesService {
           directors: movie.directors.map((director) => director.name),
           studios: movie.studios.map((studio) => studio.name),
           lastSeasonEpCount: lastSeason,
+          viewsCount: aggregatedViews,
           seasons: movie.seasons.map((season) => ({
             id: season.id,
             title: season.title,
@@ -417,6 +412,11 @@ export class MoviesService {
     const episode = await this.prisma.episode.findUnique({
       where: { id: episodeId },
       include: {
+        season: {
+          include: {
+            episodes: true,
+          },
+        },
         languages: {
           include: {
             resolutions: true,
@@ -424,11 +424,61 @@ export class MoviesService {
         },
       },
     });
+    const season = await this.prisma.season.findUnique({
+      where: { id: episode.seasonId },
+      include: {
+        movie: {
+          include: {
+            seasons: {
+              include: {
+                episodes: true,
+              },
+            },
+          },
+        },
+        episodes: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    const episodes = season?.episodes || [];
+
+    const episodeIndex = episodes.findIndex((e) => e.id === episodeId);
+
+    let nextEpisode = null;
+    let previousEpisode = null;
+
+    if (episodeIndex >= 0) {
+      if (episodeIndex < episodes.length - 1) {
+        nextEpisode = episodes[episodeIndex + 1];
+      }
+
+      if (episodeIndex > 0) {
+        previousEpisode = episodes[episodeIndex - 1];
+      } else if (season && season.episodes.length > 1) {
+        // If it's the first episode in the season, find the last episode in the previous season.
+        const previousSeasonIndex = season.movie.seasons.findIndex(
+          (s) => s.id === season.id,
+        );
+
+        if (previousSeasonIndex > 0) {
+          const previousSeason = season.movie.seasons[previousSeasonIndex - 1];
+          previousEpisode =
+            previousSeason.episodes[previousSeason.episodes.length - 1];
+        }
+      }
+    }
+
+    await this.prisma.episode.update({
+      where: { id: episodeId },
+      data: { viewsCount: episode.viewsCount + 1 },
+    });
 
     await this.prisma.view.create({
       data: {
         viewerIP: ip,
-        movie: { connect: { id: movieId } },
+        episode: { connect: { id: episodeId } },
       },
     });
 
@@ -440,8 +490,10 @@ export class MoviesService {
       success: true,
       message: 'Episode fetched successfully',
       data: {
+        previousEpisode: previousEpisode.id,
+        nextEpisode: nextEpisode.id,
         ...episode,
-        movie,
+        // movie,
       },
     };
   }
@@ -462,6 +514,11 @@ export class MoviesService {
       where: {
         createdAt: {
           gte: oneWeekAgo,
+        },
+        movieId: {
+          not: {
+            equals: null,
+          },
         },
       },
       orderBy: {
