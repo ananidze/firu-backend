@@ -498,13 +498,19 @@ export class MoviesService {
     };
   }
 
-  async topWatchedMovies({ page, limit }) {
+  async topWatchedMovies({ page, limit, user }) {
     page = Number(page) || 0;
     limit = Number(limit) || 10;
 
     const skip = page * limit;
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const where = {};
+
+    if (user?.role !== 'ADMIN') {
+      where['visible'] = true;
+    }
 
     const topWatchedMovies = await this.prisma.view.groupBy({
       by: 'movieId',
