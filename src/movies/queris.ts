@@ -5,7 +5,15 @@ export const GET_MOVIE_QUERY = {
   categories: true,
   seasons: {
     include: {
-      episodes: true,
+      episodes: {
+        include: {
+          languages: {
+            include: {
+              resolutions: true,
+            },
+          },
+        },
+      },
     },
   },
 };

@@ -11,7 +11,7 @@ export class MoviesService {
     const { directors, studios, categories, tags, ...movieData } =
       createMovieDto;
 
-    await this.prisma.movie.create({
+    const movie = await this.prisma.movie.create({
       data: {
         ...movieData,
         directors: {
@@ -44,6 +44,9 @@ export class MoviesService {
     return {
       message: 'ინფორმაცია წარმატებით დაემატა',
       statusCode: HttpStatus.CREATED,
+      data: {
+        id: movie.id,
+      },
     };
   }
 
@@ -424,6 +427,7 @@ export class MoviesService {
         },
       },
     });
+
     const season = await this.prisma.season.findUnique({
       where: { id: episode.seasonId },
       include: {
@@ -444,7 +448,7 @@ export class MoviesService {
 
     const episodes = season?.episodes || [];
 
-    const episodeIndex = episodes.findIndex((e) => e.id === episodeId);
+    const episodeIndex = episodes.findIndex((e) => e?.id === episodeId);
 
     let nextEpisode = null;
     let previousEpisode = null;
@@ -453,13 +457,11 @@ export class MoviesService {
       if (episodeIndex < episodes.length - 1) {
         nextEpisode = episodes[episodeIndex + 1];
       }
-
       if (episodeIndex > 0) {
         previousEpisode = episodes[episodeIndex - 1];
       } else if (season && season.episodes.length > 1) {
-        // If it's the first episode in the season, find the last episode in the previous season.
         const previousSeasonIndex = season.movie.seasons.findIndex(
-          (s) => s.id === season.id,
+          (s) => s?.id === season?.id,
         );
 
         if (previousSeasonIndex > 0) {
@@ -482,16 +484,16 @@ export class MoviesService {
       },
     });
 
-    const movie = await this.prisma.movie.findUnique({
-      where: { id: movieId },
-    });
+    console.log(previousEpisode, nextEpisode);
+
+    await this.prisma.movie.findUnique({ where: { id: movieId } });
 
     return {
       success: true,
       message: 'Episode fetched successfully',
       data: {
-        previousEpisode: previousEpisode.id,
-        nextEpisode: nextEpisode.id,
+        previousEpisode: previousEpisode?.id ?? null,
+        nextEpisode: nextEpisode?.id ?? null,
         ...episode,
         // movie,
       },
